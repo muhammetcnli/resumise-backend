@@ -7,12 +7,16 @@ import com.resumise.backend.dto.CvUpdateRequest;
 import com.resumise.backend.mapper.CvMapper;
 import com.resumise.backend.model.Cv;
 import com.resumise.backend.service.CvService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/cvs")
+@Validated
 public class CvController {
 
     private final CvService cvService;
@@ -43,7 +48,8 @@ public class CvController {
     public ResponseEntity<CvUploadResponse> uploadCv(
             @AuthenticationPrincipal OAuth2User userPrincipal,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "title", required = false) String title
+            @RequestParam(value = "title", required = false)
+            @Size(max = 120, message = "title must be at most 120 characters") String title
     ) {
         Cv savedCv = cvService.save(userPrincipal, file, title);
 
@@ -83,7 +89,7 @@ public class CvController {
     @GetMapping("/{cvId}")
     public ResponseEntity<CvGetResponse> getCv(
             @AuthenticationPrincipal OAuth2User userPrincipal,
-            @PathVariable Long cvId
+            @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
         Cv cv = cvService.getCv(userPrincipal, cvId);
         return ResponseEntity.ok(cvMapper.toGetResponse(cv));
@@ -99,11 +105,31 @@ public class CvController {
     @GetMapping("/{cvId}/content")
     public ResponseEntity<byte[]> getCvContent(
             @AuthenticationPrincipal OAuth2User userPrincipal,
-            @PathVariable Long cvId
+            @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
         Cv cv = cvService.getCv(userPrincipal, cvId);
         byte[] content = cvService.getCvContent(userPrincipal, cvId);
 
+        return buildCvContentResponse(cv, content);
+    }
+
+    /**
+     * Returns raw file content for the authenticated user's default CV.
+     *
+     * @param userPrincipal authenticated user details
+     * @return {@code 200 OK} with default CV file content in the response body ({@code byte[]})
+     */
+    @GetMapping("/default/content")
+    public ResponseEntity<byte[]> getDefaultCvContent(
+            @AuthenticationPrincipal OAuth2User userPrincipal
+    ) {
+        Cv cv = cvService.getDefaultCv(userPrincipal);
+        byte[] content = cvService.getDefaultCvContent(userPrincipal);
+
+        return buildCvContentResponse(cv, content);
+    }
+
+    private ResponseEntity<byte[]> buildCvContentResponse(Cv cv, byte[] content) {
         MediaType mediaType = StringUtils.hasText(cv.getFileType())
                 ? MediaType.parseMediaType(cv.getFileType())
                 : MediaType.APPLICATION_OCTET_STREAM;
@@ -125,8 +151,8 @@ public class CvController {
     @PatchMapping("/{cvId}")
     public ResponseEntity<CvGetResponse> updateCv(
             @AuthenticationPrincipal OAuth2User userPrincipal,
-            @PathVariable Long cvId,
-            @RequestBody CvUpdateRequest request
+            @PathVariable @Positive(message = "cvId must be positive") Long cvId,
+            @Valid @RequestBody CvUpdateRequest request
     ) {
         Cv updatedCv = cvService.updateCvTitle(userPrincipal, cvId, request.title());
         return ResponseEntity.ok(cvMapper.toGetResponse(updatedCv));
@@ -142,7 +168,7 @@ public class CvController {
     @PostMapping("/{cvId}/default")
     public ResponseEntity<CvGetResponse> setDefaultCv(
             @AuthenticationPrincipal OAuth2User userPrincipal,
-            @PathVariable Long cvId
+            @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
         Cv updatedCv = cvService.setDefaultCv(userPrincipal, cvId);
         return ResponseEntity.ok(cvMapper.toGetResponse(updatedCv));
@@ -158,7 +184,7 @@ public class CvController {
     @DeleteMapping("/{cvId}")
     public ResponseEntity<Void> deleteCv(
             @AuthenticationPrincipal OAuth2User userPrincipal,
-            @PathVariable Long cvId
+            @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
         cvService.deleteCv(userPrincipal, cvId);
         return ResponseEntity.noContent().build();
