@@ -23,7 +23,15 @@ public class SecurityConfig {
         http
                 .csrf(c -> c.disable())
                 .authorizeHttpRequests(a -> a
-                        .requestMatchers("/oauth2/**", "/login/**", "/actuator/health", "/error").permitAll()
+                        .requestMatchers(
+                                "/oauth2/**",
+                                "/login/**",
+                                "/actuator/health",
+                                "/error",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .loginPage("/oauth2/authorization/google")
