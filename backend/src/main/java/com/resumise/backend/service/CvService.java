@@ -53,6 +53,7 @@ public class CvService {
         }
 
         User user = authProvisioningService.provisionGoogleUser(userPrincipal);
+        boolean isFirstCvForUser = !cvRepository.existsByUserId(user.getId());
 
         String fileName = StringUtils.hasText(file.getOriginalFilename())
                 ? Paths.get(file.getOriginalFilename()).getFileName().toString()
@@ -76,7 +77,7 @@ public class CvService {
                 .fileSize(file.getSize())
                 .title(resolvedTitle)
                 .user(user)
-                .isDefault(false)
+                .isDefault(isFirstCvForUser)
                 .build();
 
         return cvRepository.save(cv);
@@ -114,6 +115,17 @@ public class CvService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found"));
     }
 
+    public Cv getDefaultCv(OAuth2User userPrincipal) {
+        if (userPrincipal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+        }
+
+        User user = authProvisioningService.provisionGoogleUser(userPrincipal);
+
+        return cvRepository.findByUserIdAndIsDefaultTrue(user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Default CV not found"));
+    }
+
     public byte[] getCvContent(OAuth2User userPrincipal, Long cvId) {
         Cv cv = getCv(userPrincipal, cvId);
         Path filePath = Paths.get(cv.getFilePath());
@@ -126,6 +138,21 @@ public class CvService {
             return Files.readAllBytes(filePath);
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CV file could not be read", e);
+        }
+    }
+
+    public byte[] getDefaultCvContent(OAuth2User userPrincipal) {
+        Cv cv = getDefaultCv(userPrincipal);
+        Path filePath = Paths.get(cv.getFilePath());
+
+        if (!Files.exists(filePath)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Default CV file not found");
+        }
+
+        try {
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Default CV file could not be read", e);
         }
     }
 
