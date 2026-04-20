@@ -8,6 +8,7 @@ public record AnalysisGetResponse(
         Long cvId,
         String cvTitle,
         String jobLink,
+        String jobDescription,
         String correlationId,
         String errorMessage,
         Integer matchScore,
