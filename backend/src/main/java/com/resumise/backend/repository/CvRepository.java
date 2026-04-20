@@ -19,6 +19,8 @@ public interface CvRepository extends JpaRepository<Cv, Long> {
 
     boolean existsByUserId(Long userId);
 
+    long countByUserId(Long userId);
+
     @Modifying
     @Query("update Cv c set c.isDefault = false where c.user.id = :userId")
     void clearDefaultByUserId(@Param("userId") Long userId);
