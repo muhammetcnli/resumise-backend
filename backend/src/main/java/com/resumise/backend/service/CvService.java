@@ -5,7 +5,7 @@ import com.resumise.backend.model.Cv;
 import com.resumise.backend.model.User;
 import com.resumise.backend.repository.CvRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +38,7 @@ public class CvService {
         this.authProvisioningService = authProvisioningService;
     }
 
-    public Cv save(OAuth2User userPrincipal, MultipartFile file, String title) {
-        if (userPrincipal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
-        }
+    public Cv save(Authentication authentication, MultipartFile file, String title) {
 
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");
@@ -52,7 +49,7 @@ public class CvService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported file type");
         }
 
-        User user = authProvisioningService.provisionGoogleUser(userPrincipal);
+        User user = requireUser(authentication);
         boolean isFirstCvForUser = !cvRepository.existsByUserId(user.getId());
 
         String fileName = StringUtils.hasText(file.getOriginalFilename())
@@ -84,12 +81,8 @@ public class CvService {
     }
 
     // bak
-    public List<CvListItemResponse> listCvs(OAuth2User userPrincipal) {
-        if (userPrincipal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
-        }
-
-        User user = authProvisioningService.provisionGoogleUser(userPrincipal);
+    public List<CvListItemResponse> listCvs(Authentication authentication) {
+        User user = requireUser(authentication);
 
         return cvRepository.findAllByUserIdOrderByIdDesc(user.getId())
                 .stream()
@@ -104,30 +97,22 @@ public class CvService {
                 .toList();
     }
 
-    public Cv getCv(OAuth2User userPrincipal, Long cvId) {
-        if (userPrincipal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
-        }
-
-        User user = authProvisioningService.provisionGoogleUser(userPrincipal);
+    public Cv getCv(Authentication authentication, Long cvId) {
+        User user = requireUser(authentication);
 
         return cvRepository.findByIdAndUserId(cvId, user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found"));
     }
 
-    public Cv getDefaultCv(OAuth2User userPrincipal) {
-        if (userPrincipal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
-        }
-
-        User user = authProvisioningService.provisionGoogleUser(userPrincipal);
+    public Cv getDefaultCv(Authentication authentication) {
+        User user = requireUser(authentication);
 
         return cvRepository.findByUserIdAndIsDefaultTrue(user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Default CV not found"));
     }
 
-    public byte[] getCvContent(OAuth2User userPrincipal, Long cvId) {
-        Cv cv = getCv(userPrincipal, cvId);
+    public byte[] getCvContent(Authentication authentication, Long cvId) {
+        Cv cv = getCv(authentication, cvId);
         Path filePath = Paths.get(cv.getFilePath());
 
         if (!Files.exists(filePath)) {
@@ -141,8 +126,8 @@ public class CvService {
         }
     }
 
-    public byte[] getDefaultCvContent(OAuth2User userPrincipal) {
-        Cv cv = getDefaultCv(userPrincipal);
+    public byte[] getDefaultCvContent(Authentication authentication) {
+        Cv cv = getDefaultCv(authentication);
         Path filePath = Paths.get(cv.getFilePath());
 
         if (!Files.exists(filePath)) {
@@ -156,19 +141,19 @@ public class CvService {
         }
     }
 
-    public Cv updateCvTitle(OAuth2User userPrincipal, Long cvId, String title) {
+    public Cv updateCvTitle(Authentication authentication, Long cvId, String title) {
         if (!StringUtils.hasText(title)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title is required");
         }
 
-        Cv cv = getCv(userPrincipal, cvId);
+        Cv cv = getCv(authentication, cvId);
         cv.setTitle(title.trim());
         return cvRepository.save(cv);
     }
 
     @Transactional
-    public Cv setDefaultCv(OAuth2User userPrincipal, Long cvId) {
-        Cv cv = getCv(userPrincipal, cvId);
+    public Cv setDefaultCv(Authentication authentication, Long cvId) {
+        Cv cv = getCv(authentication, cvId);
         Long userId = cv.getUser().getId();
 
         cvRepository.clearDefaultByUserId(userId);
@@ -176,8 +161,8 @@ public class CvService {
         return cvRepository.save(cv);
     }
 
-    public void deleteCv(OAuth2User userPrincipal, Long cvId) {
-        Cv cv = getCv(userPrincipal, cvId);
+    public void deleteCv(Authentication authentication, Long cvId) {
+        Cv cv = getCv(authentication, cvId);
         Path filePath = Paths.get(cv.getFilePath());
 
         cvRepository.delete(cv);
@@ -187,5 +172,9 @@ public class CvService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "CV file could not be deleted", e);
         }
+    }
+
+    private User requireUser(Authentication authentication) {
+        return authProvisioningService.resolveAuthenticatedUser(authentication);
     }
 }
