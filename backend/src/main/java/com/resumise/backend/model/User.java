@@ -35,6 +35,39 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(length = 500)
+    private String profileImageUrl;
+
+    @Column(length = 120)
+    private String headline;
+
+    @Column(length = 120)
+    private String location;
+
+    @Column(length = 30)
+    private String phone;
+
+    @Column(length = 255)
+    private String linkedinUrl;
+
+    @Column(length = 255)
+    private String githubUrl;
+
+    @Column(length = 2500)
+    private String professionalSummary;
+
+    @Column(length = 500)
+    private String targetRoles;
+
+    @Column(nullable = false)
+    private boolean notifyHighMatch = true;
+
+    @Column(nullable = false)
+    private boolean notifyNewsletter = false;
+
+    @Column(nullable = false)
+    private boolean notifyInterviewReminders = true;
+
     @OneToMany(mappedBy = "user")
     private List<AuthAccount> authAccounts = new ArrayList<>();
 
