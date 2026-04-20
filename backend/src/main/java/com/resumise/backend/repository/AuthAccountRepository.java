@@ -10,4 +10,8 @@ import java.util.Optional;
 @Repository
 public interface AuthAccountRepository extends JpaRepository<AuthAccount, Long> {
     Optional<AuthAccount> findByProviderAndProviderUserId(AuthProvider provider, String providerUserId);
+
+    Optional<AuthAccount> findFirstByUserIdOrderByIdAsc(Long userId);
+
+    boolean existsByUserIdAndProvider(Long userId, AuthProvider provider);
 }
