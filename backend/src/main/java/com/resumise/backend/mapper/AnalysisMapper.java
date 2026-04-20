@@ -18,6 +18,7 @@ public class AnalysisMapper {
                 request.getCv().getId(),
                 request.getCv().getTitle(),
                 request.getJobPosting().getJobLink(),
+                request.getJobPosting().getNotes(),
                 matchScore
         );
     }
@@ -31,6 +32,7 @@ public class AnalysisMapper {
                 request.getCv().getId(),
                 request.getCv().getTitle(),
                 request.getJobPosting().getJobLink(),
+                request.getJobPosting().getNotes(),
                 request.getCorrelationId(),
                 request.getErrorMessage(),
                 result != null ? result.getMatchScore() : null,
