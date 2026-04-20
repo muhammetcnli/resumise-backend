@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="resumise-db@localhost" uuid="f5f22ea7-789b-431b-be00-a131fa8e0353">
+    <data-source source="LOCAL" name="resumise-db@localhost" uuid="c0036141-8c9c-4f9e-ae9a-856bcef25148">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5432/resumise-db</jdbc-url>
+      <jdbc-url>jdbc:postgresql://localhost:5433/resumise-db</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.host.port" />
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
