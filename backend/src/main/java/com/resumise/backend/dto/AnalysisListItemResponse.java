@@ -8,6 +8,7 @@ public record AnalysisListItemResponse(
         Long cvId,
         String cvTitle,
         String jobLink,
+        String jobDescription,
         Integer matchScore
 ) {
 }
