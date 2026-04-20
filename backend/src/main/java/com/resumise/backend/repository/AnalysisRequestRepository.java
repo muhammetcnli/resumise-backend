@@ -1,6 +1,7 @@
 package com.resumise.backend.repository;
 
 import com.resumise.backend.model.AnalysisRequest;
+import com.resumise.backend.model.AnalysisStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,5 +12,9 @@ public interface AnalysisRequestRepository extends JpaRepository<AnalysisRequest
     Optional<AnalysisRequest> findByIdAndUserId(Long id, Long userId);
 
     List<AnalysisRequest> findAllByUserIdOrderByIdDesc(Long userId);
+
+    long countByUserId(Long userId);
+
+    long countByUserIdAndStatus(Long userId, AnalysisStatus status);
 }
 
