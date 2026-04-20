@@ -14,8 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -39,19 +38,19 @@ public class CvController {
     /**
      * Uploads a CV file for the authenticated user and returns the saved CV metadata.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @param file CV file to upload (pdf/doc/docx)
      * @param title optional CV title; if blank, file name is used
      * @return {@code 201 Created} with saved CV metadata in the response body ({@link CvUploadResponse})
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CvUploadResponse> uploadCv(
-            @AuthenticationPrincipal OAuth2User userPrincipal,
+            Authentication authentication,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "title", required = false)
             @Size(max = 120, message = "title must be at most 120 characters") String title
     ) {
-        Cv savedCv = cvService.save(userPrincipal, file, title);
+        Cv savedCv = cvService.save(authentication, file, title);
 
         CvUploadResponse response = new CvUploadResponse(
                 savedCv.getId(),
@@ -67,64 +66,78 @@ public class CvController {
     /**
      * Returns the list of CVs owned by the authenticated user.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @return {@code 200 OK} with the user's CV summary list in the response body ({@link CvListItemResponse})
      */
     @GetMapping("/list")
     public ResponseEntity<List<CvListItemResponse>> listMyCvs(
-            @AuthenticationPrincipal OAuth2User userPrincipal
+            Authentication authentication
     ) {
         // get cv list in cv service
-        List<CvListItemResponse> items = cvService.listCvs(userPrincipal);
+        List<CvListItemResponse> items = cvService.listCvs(authentication);
         return ResponseEntity.ok(items);
     }
 
     /**
      * Returns metadata for the given CV id.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @param cvId id of the CV to retrieve
      * @return {@code 200 OK} with CV metadata in the response body ({@link CvGetResponse})
      */
     @GetMapping("/{cvId}")
     public ResponseEntity<CvGetResponse> getCv(
-            @AuthenticationPrincipal OAuth2User userPrincipal,
+            Authentication authentication,
             @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
-        Cv cv = cvService.getCv(userPrincipal, cvId);
+        Cv cv = cvService.getCv(authentication, cvId);
         return ResponseEntity.ok(cvMapper.toGetResponse(cv));
     }
 
     /**
      * Returns raw file content for the given CV id with the appropriate content type.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @param cvId id of the CV file to read/download
      * @return {@code 200 OK} with CV file content in the response body ({@code byte[]})
      */
     @GetMapping("/{cvId}/content")
     public ResponseEntity<byte[]> getCvContent(
-            @AuthenticationPrincipal OAuth2User userPrincipal,
+            Authentication authentication,
             @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
-        Cv cv = cvService.getCv(userPrincipal, cvId);
-        byte[] content = cvService.getCvContent(userPrincipal, cvId);
+        Cv cv = cvService.getCv(authentication, cvId);
+        byte[] content = cvService.getCvContent(authentication, cvId);
 
         return buildCvContentResponse(cv, content);
     }
 
     /**
+     * Returns metadata for the authenticated user's default CV.
+     *
+     * @param authentication authenticated user details
+     * @return {@code 200 OK} with default CV metadata in the response body ({@link CvGetResponse})
+     */
+    @GetMapping("/default")
+    public ResponseEntity<CvGetResponse> getDefaultCv(
+            Authentication authentication
+    ) {
+        Cv cv = cvService.getDefaultCv(authentication);
+        return ResponseEntity.ok(cvMapper.toGetResponse(cv));
+    }
+
+    /**
      * Returns raw file content for the authenticated user's default CV.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @return {@code 200 OK} with default CV file content in the response body ({@code byte[]})
      */
     @GetMapping("/default/content")
     public ResponseEntity<byte[]> getDefaultCvContent(
-            @AuthenticationPrincipal OAuth2User userPrincipal
+            Authentication authentication
     ) {
-        Cv cv = cvService.getDefaultCv(userPrincipal);
-        byte[] content = cvService.getDefaultCvContent(userPrincipal);
+        Cv cv = cvService.getDefaultCv(authentication);
+        byte[] content = cvService.getDefaultCvContent(authentication);
 
         return buildCvContentResponse(cv, content);
     }
@@ -143,50 +156,50 @@ public class CvController {
     /**
      * Updates the title of the given CV.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @param cvId id of the CV to update
      * @param request update payload (title)
      * @return {@code 200 OK} with updated CV metadata in the response body ({@link CvGetResponse})
      */
     @PatchMapping("/{cvId}")
     public ResponseEntity<CvGetResponse> updateCv(
-            @AuthenticationPrincipal OAuth2User userPrincipal,
+            Authentication authentication,
             @PathVariable @Positive(message = "cvId must be positive") Long cvId,
             @Valid @RequestBody CvUpdateRequest request
     ) {
-        Cv updatedCv = cvService.updateCvTitle(userPrincipal, cvId, request.title());
+        Cv updatedCv = cvService.updateCvTitle(authentication, cvId, request.title());
         return ResponseEntity.ok(cvMapper.toGetResponse(updatedCv));
     }
 
     /**
      * Marks the given CV as the authenticated user's default CV.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @param cvId id of the CV to set as default
      * @return {@code 200 OK} with current CV metadata in the response body ({@link CvGetResponse})
      */
     @PostMapping("/{cvId}/default")
     public ResponseEntity<CvGetResponse> setDefaultCv(
-            @AuthenticationPrincipal OAuth2User userPrincipal,
+            Authentication authentication,
             @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
-        Cv updatedCv = cvService.setDefaultCv(userPrincipal, cvId);
+        Cv updatedCv = cvService.setDefaultCv(authentication, cvId);
         return ResponseEntity.ok(cvMapper.toGetResponse(updatedCv));
     }
 
     /**
      * Deletes the given CV record and its associated file when present.
      *
-     * @param userPrincipal authenticated user details
+     * @param authentication authenticated user details
      * @param cvId id of the CV to delete
      * @return {@code 204 No Content}
      */
     @DeleteMapping("/{cvId}")
     public ResponseEntity<Void> deleteCv(
-            @AuthenticationPrincipal OAuth2User userPrincipal,
+            Authentication authentication,
             @PathVariable @Positive(message = "cvId must be positive") Long cvId
     ) {
-        cvService.deleteCv(userPrincipal, cvId);
+        cvService.deleteCv(authentication, cvId);
         return ResponseEntity.noContent().build();
     }
 
