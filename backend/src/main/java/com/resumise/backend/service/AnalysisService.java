@@ -15,8 +15,9 @@ import com.resumise.backend.repository.AnalysisResultRepository;
 import com.resumise.backend.repository.CvRepository;
 import com.resumise.backend.repository.JobPostingRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -51,11 +52,16 @@ public class AnalysisService {
         this.analysisMapper = analysisMapper;
     }
 
-    public AnalysisGetResponse createAnalysis(OAuth2User userPrincipal, AnalysisCreateRequest request) {
-        User user = requireUser(userPrincipal);
+    public AnalysisGetResponse createAnalysis(Authentication authentication, AnalysisCreateRequest request) {
+        User user = requireUser(authentication);
         Cv cv = findUserCv(user.getId(), request.cvId());
 
-        JobPosting jobPosting = buildJobPosting(user, request.jobLink());
+        JobPosting jobPosting = buildJobPosting(
+                user,
+                request.jobDescription(),
+                request.jobLink(),
+                request.jobDescription()
+        );
         jobPostingRepository.save(jobPosting);
 
         AnalysisRequest analysisRequest = new AnalysisRequest();
@@ -101,8 +107,9 @@ public class AnalysisService {
         }
     }
 
-    public List<AnalysisListItemResponse> listAnalyses(OAuth2User userPrincipal) {
-        User user = requireUser(userPrincipal);
+    @Transactional(readOnly = true)
+    public List<AnalysisListItemResponse> listAnalyses(Authentication authentication) {
+        User user = requireUser(authentication);
 
         return analysisRequestRepository.findAllByUserIdOrderByIdDesc(user.getId())
                 .stream()
@@ -110,18 +117,16 @@ public class AnalysisService {
                 .toList();
     }
 
-    public AnalysisGetResponse getAnalysis(OAuth2User userPrincipal, Long analysisId) {
-        User user = requireUser(userPrincipal);
+    @Transactional(readOnly = true)
+    public AnalysisGetResponse getAnalysis(Authentication authentication, Long analysisId) {
+        User user = requireUser(authentication);
         AnalysisRequest request = findUserAnalysisRequest(user.getId(), analysisId);
         return analysisMapper.toGetResponse(request);
     }
 
 
-    private User requireUser(OAuth2User userPrincipal) {
-        if (userPrincipal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
-        }
-        return authProvisioningService.provisionGoogleUser(userPrincipal);
+    private User requireUser(Authentication authentication) {
+        return authProvisioningService.resolveAuthenticatedUser(authentication);
     }
 
     private Cv findUserCv(Long userId, Long cvId) {
@@ -138,22 +143,37 @@ public class AnalysisService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Analysis request not found"));
     }
 
-    private JobPosting buildJobPosting(User user, String jobLink) {
-        if (!StringUtils.hasText(jobLink)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobLink is required");
+    private JobPosting buildJobPosting(
+            User user,
+            String jobDescription,
+            String jobLink,
+            String notes
+    ) {
+        if (!StringUtils.hasText(jobDescription)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobDescription is required");
         }
 
-        String trimmedJobLink = jobLink.trim();
+        String resolvedJobLink = StringUtils.hasText(jobLink) ? jobLink.trim() : jobDescription.trim();
 
         JobPosting jobPosting = new JobPosting();
         jobPosting.setUser(user);
-        jobPosting.setJobLink(trimmedJobLink);
-        jobPosting.setNormalizedJobLink(normalizeJobLink(trimmedJobLink));
+        jobPosting.setJobLink(resolvedJobLink);
+        jobPosting.setNormalizedJobLink(normalizeJobLink(resolvedJobLink));
+        jobPosting.setCompanyName(null);
+        jobPosting.setPositionName(null);
+        jobPosting.setNotes(normalizeOptional(notes));
         return jobPosting;
     }
 
     private String normalizeJobLink(String jobLink) {
         return jobLink.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeOptional(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
     }
 }
 
