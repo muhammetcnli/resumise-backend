@@ -9,6 +9,7 @@ import com.resumise.backend.repository.AnalysisRequestRepository;
 import com.resumise.backend.repository.CvRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class DashboardService {
         this.analysisRequestRepository = analysisRequestRepository;
     }
 
+    @Transactional(readOnly = true)
     public DashboardOverviewResponse getOverview(Authentication authentication) {
         User user = requireUser(authentication);
 
