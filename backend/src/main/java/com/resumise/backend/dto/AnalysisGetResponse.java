@@ -7,7 +7,6 @@ public record AnalysisGetResponse(
         AnalysisStatus status,
         Long cvId,
         String cvTitle,
-        String jobLink,
         String jobDescription,
         String correlationId,
         String errorMessage,
