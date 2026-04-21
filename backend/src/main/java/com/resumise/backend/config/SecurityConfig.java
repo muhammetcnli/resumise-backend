@@ -1,6 +1,7 @@
 package com.resumise.backend.config;
 
 import com.resumise.backend.service.OAuth2UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,9 +21,14 @@ import java.util.List;
 public class SecurityConfig {
 
     private final OAuth2UserService oAuth2UserService;
+    private final String oauth2SuccessRedirectUrl;
 
-    public SecurityConfig(OAuth2UserService oAuth2UserService) {
+    public SecurityConfig(
+            OAuth2UserService oAuth2UserService,
+            @Value("${app.auth.oauth2-success-redirect-url}") String oauth2SuccessRedirectUrl
+    ) {
         this.oAuth2UserService = oAuth2UserService;
+        this.oauth2SuccessRedirectUrl = oauth2SuccessRedirectUrl;
     }
 
     @Bean
@@ -52,7 +58,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .loginPage("/oauth2/authorization/google")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl(oauth2SuccessRedirectUrl, true)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oAuth2UserService)));
 
