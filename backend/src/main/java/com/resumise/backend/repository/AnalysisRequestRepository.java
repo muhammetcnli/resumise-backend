@@ -13,6 +13,8 @@ public interface AnalysisRequestRepository extends JpaRepository<AnalysisRequest
 
     List<AnalysisRequest> findAllByUserIdOrderByIdDesc(Long userId);
 
+    boolean existsByCv_IdAndUser_Id(Long cvId, Long userId);
+
     long countByUserId(Long userId);
 
     long countByUserIdAndStatus(Long userId, AnalysisStatus status);
