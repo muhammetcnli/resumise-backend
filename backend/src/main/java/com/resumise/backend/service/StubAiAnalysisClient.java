@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class StubAiAnalysisClient implements AiAnalysisClient {
@@ -83,7 +84,7 @@ public class StubAiAnalysisClient implements AiAnalysisClient {
             JsonNode root = objectMapper.readTree(raw);
             JsonNode payload = root.path("data").isObject() ? root.path("data") : root;
 
-            int matchScore = intOrDefault(payload, "match_score", 0);
+            int matchScore = resolveMatchScore(payload);
             String strengths = stringify(payload, "strengths", "matched_skills", "pros");
             String gaps = stringify(payload, "skill_gap", "gaps", "missing_skills", "cons");
 
@@ -115,6 +116,15 @@ public class StubAiAnalysisClient implements AiAnalysisClient {
     private int intOrDefault(JsonNode root, String key, int defaultValue) {
         JsonNode node = root.path(key);
         return node.isInt() ? node.intValue() : defaultValue;
+    }
+
+    private int resolveMatchScore(JsonNode payload) {
+        JsonNode node = payload.path("match_score");
+        if (node.isInt()) {
+            return node.intValue();
+        }
+        // Temporary MVP fallback when AI does not provide a score yet.
+        return ThreadLocalRandom.current().nextInt(50, 91);
     }
 
     private String textOrFirstAvailable(JsonNode root, String... keys) {
