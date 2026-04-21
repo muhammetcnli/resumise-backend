@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: 'postgres:15-alpine'
+    image: 'postgres:latest'
     container_name: resumise-backend-postgres-dev
     environment:
       - 'POSTGRES_DB=resumise-db'
