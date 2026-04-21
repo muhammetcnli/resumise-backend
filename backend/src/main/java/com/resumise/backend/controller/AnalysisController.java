@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,6 +75,22 @@ public class AnalysisController {
     ) {
         AnalysisGetResponse response = analysisService.getAnalysis(authentication, analysisId);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Deletes a single analysis request owned by the authenticated user.
+     *
+     * @param authentication authenticated user details
+     * @param analysisId analysis request id
+     * @return {@code 204 No Content}
+     */
+    @DeleteMapping("/{analysisId}")
+    public ResponseEntity<Void> deleteAnalysis(
+            Authentication authentication,
+            @PathVariable @Positive(message = "analysisId must be positive") Long analysisId
+    ) {
+        analysisService.deleteAnalysis(authentication, analysisId);
+        return ResponseEntity.noContent().build();
     }
 }
 
