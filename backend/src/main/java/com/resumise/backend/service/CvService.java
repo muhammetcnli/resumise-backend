@@ -3,6 +3,7 @@ package com.resumise.backend.service;
 import com.resumise.backend.dto.CvListItemResponse;
 import com.resumise.backend.model.Cv;
 import com.resumise.backend.model.User;
+import com.resumise.backend.repository.AnalysisRequestRepository;
 import com.resumise.backend.repository.CvRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -31,10 +32,14 @@ public class CvService {
     );
 
     private final CvRepository cvRepository;
+    private final AnalysisRequestRepository analysisRequestRepository;
     private final AuthProvisioningService authProvisioningService;
 
-    public CvService(CvRepository cvRepository, AuthProvisioningService authProvisioningService) {
+    public CvService(CvRepository cvRepository,
+                     AnalysisRequestRepository analysisRequestRepository,
+                     AuthProvisioningService authProvisioningService) {
         this.cvRepository = cvRepository;
+        this.analysisRequestRepository = analysisRequestRepository;
         this.authProvisioningService = authProvisioningService;
     }
 
@@ -163,6 +168,16 @@ public class CvService {
 
     public void deleteCv(Authentication authentication, Long cvId) {
         Cv cv = getCv(authentication, cvId);
+        Long userId = cv.getUser().getId();
+
+        boolean hasLinkedAnalyses = analysisRequestRepository.existsByCv_IdAndUser_Id(cvId, userId);
+        if (hasLinkedAnalyses) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "CV is used by existing analyses. Delete analyses first or upload a new CV."
+            );
+        }
+
         Path filePath = Paths.get(cv.getFilePath());
 
         cvRepository.delete(cv);
