@@ -124,6 +124,19 @@ public class AnalysisService {
         return analysisMapper.toGetResponse(request);
     }
 
+    @Transactional
+    public void deleteAnalysis(Authentication authentication, Long analysisId) {
+        User user = requireUser(authentication);
+        AnalysisRequest request = findUserAnalysisRequest(user.getId(), analysisId);
+
+        AnalysisResult result = request.getAnalysisResult();
+        if (result != null) {
+            analysisResultRepository.delete(result);
+        }
+
+        analysisRequestRepository.delete(request);
+    }
+
 
     private User requireUser(Authentication authentication) {
         return authProvisioningService.resolveAuthenticatedUser(authentication);
