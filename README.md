@@ -258,7 +258,7 @@ docker pull ghcr.io/muhammetcnli/resumise-backend:latest
 
 Resumise was exhibited at the Bolu Duzce Ar-Ge Pazari under the **"Ali Kuscu Young Innovators"** category, contributing to the regional innovation and entrepreneurship ecosystem.
 
-![Event Stand](event-photo-placeholder.png)
+![Event Stand](https://github.com/muhammetcnli/resumise-backend/blob/main/uploads/photos/event.jpg)
 
 ---
 
