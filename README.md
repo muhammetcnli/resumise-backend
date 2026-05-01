@@ -254,7 +254,7 @@ docker pull ghcr.io/muhammetcnli/resumise-backend:latest
 
 ## Achievements
 
-**Bolu Abant Izzet Baysal University — Ar-Ge Pazari 2026**
+**Bolu-Düzce Ar-Ge Pazari 2026**
 
 Resumise was exhibited at the Bolu Duzce Ar-Ge Pazari under the **"Ali Kuscu Young Innovators"** category, contributing to the regional innovation and entrepreneurship ecosystem.
 
@@ -264,4 +264,4 @@ Resumise was exhibited at the Bolu Duzce Ar-Ge Pazari under the **"Ali Kuscu You
 
 ## License
 
-This project is currently unlicensed. All rights reserved by the project authors.
+This project is under MIT licence. All rights reserved by the project authors.
